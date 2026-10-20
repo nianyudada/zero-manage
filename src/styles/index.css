@@ -1,0 +1,21 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+@import 'leaflet/dist/leaflet.css';
+
+/* Leaflet Map Custom Marker & Popup Clean Styling */
+.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  padding: 0.25rem !important;
+}
+
+.leaflet-popup-content {
+  margin: 0.5rem !important;
+  line-height: 1.4 !important;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "消息推送管理平台",
+  "description": "企业级消息推送管理平台。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
