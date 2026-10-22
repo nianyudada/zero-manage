@@ -22,22 +22,15 @@ import {
   ScrollText,
   Search,
   RotateCcw,
-  Eye,
+  Pencil,
   ExternalLink,
   Building,
   Calendar,
   Globe2,
   Tag,
-  FileText,
   ChevronLeft,
   ChevronRight,
-  Layers,
-  Sparkles,
-  Download,
-  FileDown,
-  Copy,
-  Globe,
-  FileSpreadsheet,
+  Bookmark,
 } from 'lucide-react';
 
 export interface PolicyAttachment {
@@ -46,18 +39,37 @@ export interface PolicyAttachment {
   type: 'pdf' | 'doc' | 'xlsx';
 }
 
+// 政策类型枚举: 政策法规, 标准规范, 规划指南
+export const POLICY_TYPE_OPTIONS = ['政策法规', '标准规范', '规划指南'] as const;
+export type PolicyType = (typeof POLICY_TYPE_OPTIONS)[number];
+
+// 内容标签枚举: 电力市场、双碳减排、能源管理、园区工厂、光伏储能、虚拟电厂、新型场景
+export const CONTENT_TAG_OPTIONS = [
+  '电力市场',
+  '双碳减排',
+  '能源管理',
+  '园区工厂',
+  '光伏储能',
+  '虚拟电厂',
+  '新型场景',
+] as const;
+export type ContentTag = (typeof CONTENT_TAG_OPTIONS)[number];
+
 export interface PolicyItem {
   id: string;
   title: string;              // 政策标题
   policyNumber?: string;      // 发文字号
-  issuingAgency: string;      // 发文机构
+  policyCategory: string;     // 政策分类 (不可编辑)
+  issuingAuthority: string;   // 发文机关 (不可编辑)
+  publishingAgency: string;   // 发布机构 (原发文机构，不可编辑)
   publishDate: string;        // 发布时间 (YYYY-MM-DD)
   source: string;             // 来源
   sourceUrl: string;          // 原始链接
-  region: string;             // 所属地区
-  category: string;           // 资讯分类
+  region: string;             // 所属地区 (支持编辑)
+  policyType: PolicyType;     // 政策类型 (支持编辑)
+  contentTags: string[];      // 内容标签 (支持编辑)
   status: 'published' | 'unpublished'; // 上架状态
-  syncTime?: string;          // 同步时间 (可选历史字段)
+  syncTime?: string;          // 同步时间
   summary?: string;           // 核心摘要
   content?: string;           // 政策正文/要点
   applicableServices?: string[]; // 适配服务模块
@@ -70,12 +82,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-001',
     title: '关于建立健全电力现货市场与虚拟电厂协同运营机制的通知',
     policyNumber: '发改体改〔2026〕142号',
-    issuingAgency: '国家发展改革委、国家能源局',
+    policyCategory: '部门规范性文件',
+    issuingAuthority: '国家发展改革委、国家能源局',
+    publishingAgency: '国家发展改革委',
     publishDate: '2026-09-12',
     source: '国家发展改革委官网',
     sourceUrl: 'https://www.ndrc.gov.cn/xxgk/zcfb/',
     region: '全国',
-    category: '虚拟电厂',
+    policyType: '政策法规',
+    contentTags: ['电力市场', '虚拟电厂'],
     status: 'published',
     syncTime: '2026-10-18 09:30:15',
     summary: '明确虚拟电厂作为独立经营主体参与电力现货市场和辅助服务市场的技术准入标准、出清价格结算机制与收益分配原则。',
@@ -91,12 +106,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-002',
     title: '2026年新型储能协同微电网高质量发展实施方案',
     policyNumber: '国能发科技〔2026〕58号',
-    issuingAgency: '国家能源局',
+    policyCategory: '行业规划指南',
+    issuingAuthority: '国家能源局',
+    publishingAgency: '国家能源局',
     publishDate: '2026-08-28',
     source: '国家能源局官方发布',
     sourceUrl: 'http://www.nea.gov.cn/news/',
     region: '全国',
-    category: '储能与微电网',
+    policyType: '规划指南',
+    contentTags: ['光伏储能', '能源管理'],
     status: 'published',
     syncTime: '2026-10-17 14:12:00',
     summary: '提出到2026年底新增工商业用户侧储能装机容量达15GW以上，加速企业级微电网源网荷储一体化运行与调度技术突破。',
@@ -111,12 +129,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-003',
     title: '广东省关于深化工业园区分布式光伏与智能微电网建设试点的通知',
     policyNumber: '粤能新能〔2026〕31号',
-    issuingAgency: '广东省能源局',
+    policyCategory: '地方试点文件',
+    issuingAuthority: '广东省能源局',
+    publishingAgency: '广东省能源局',
     publishDate: '2026-09-25',
     source: '广东省人民政府门户网',
     sourceUrl: 'https://www.gd.gov.cn/zwgk/',
     region: '广东省',
-    category: '储能与微电网',
+    policyType: '政策法规',
+    contentTags: ['园区工厂', '光伏储能'],
     status: 'published',
     syncTime: '2026-10-18 16:45:20',
     summary: '在珠三角及粤东粤西建设首批50个省级近零碳示范工业微网园区，提供分布式能源自治管理与负荷柔性控制支持。',
@@ -131,12 +152,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-004',
     title: '江苏省虚拟电厂负荷聚合商参与电力辅助服务市场运营细则（试行）',
     policyNumber: '苏发改规发〔2026〕8号',
-    issuingAgency: '江苏省发改委、江苏能监办',
+    policyCategory: '地方监管细则',
+    issuingAuthority: '江苏省发改委、江苏能监办',
+    publishingAgency: '江苏省发改委',
     publishDate: '2026-09-02',
     source: '江苏省发改委官网',
     sourceUrl: 'http://fzggw.jiangsu.gov.cn/',
     region: '江苏省',
-    category: '虚拟电厂',
+    policyType: '标准规范',
+    contentTags: ['电力市场', '虚拟电厂'],
     status: 'published',
     syncTime: '2026-10-16 11:20:00',
     summary: '明确具备5MW/2小时可调节能力的负荷聚合商接入调度主站的通信协议和秒级调频、分钟级调峰响应补偿标准。',
@@ -151,12 +175,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-005',
     title: '工业重点领域能效标杆水平和基准水平最新指引（2026年版）',
     policyNumber: '工信部联节〔2026〕77号',
-    issuingAgency: '工业和信息化部、国家发展改革委',
+    policyCategory: '行业技术指引',
+    issuingAuthority: '工业和信息化部、国家发展改革委',
+    publishingAgency: '工业和信息化部',
     publishDate: '2026-07-20',
     source: '工信部政务公开',
     sourceUrl: 'https://www.miit.gov.cn/jgsj/',
     region: '全国',
-    category: '节能降碳',
+    policyType: '标准规范',
+    contentTags: ['双碳减排', '能源管理'],
     status: 'published',
     syncTime: '2026-10-15 08:50:33',
     summary: '发布钢铁、电解铝、数据中心、水泥等25个重点工业行业综合能耗标杆值，明确未达标企业的梯度电价加价与技术改造要求。',
@@ -170,12 +197,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-006',
     title: '浙江省关于加快全省绿电绿证市场化交易与企业碳账户协同的指导意见',
     policyNumber: '浙发改能源〔2026〕45号',
-    issuingAgency: '浙江省发展和改革委员会',
+    policyCategory: '地方指导意见',
+    issuingAuthority: '浙江省发展和改革委员会',
+    publishingAgency: '浙江省发展和改革委员会',
     publishDate: '2026-08-15',
     source: '浙江政务服务网',
     sourceUrl: 'https://www.zj.gov.cn/zwgk/',
     region: '浙江省',
-    category: '绿电绿证',
+    policyType: '规划指南',
+    contentTags: ['电力市场', '双碳减排'],
     status: 'published',
     syncTime: '2026-10-14 15:30:10',
     summary: '打通浙江电力交易平台与企业碳排放核算账户系统，实现每张绿证对应电量数据直达企业碳效码，助力出口型制造企业无缝应对国际碳关税。',
@@ -190,12 +220,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-007',
     title: '北京市推进低碳建筑与可再生能源一体化应用补贴资金申报指南',
     policyNumber: '京建发〔2026〕210号',
-    issuingAgency: '北京市住房和城乡建设委员会、北京市财政局',
+    policyCategory: '财政申报指南',
+    issuingAuthority: '北京市住房和城乡建设委员会、北京市财政局',
+    publishingAgency: '北京市住房和城乡建设委员会',
     publishDate: '2026-06-30',
     source: '首都之窗门户网',
     sourceUrl: 'http://www.beijing.gov.cn/',
     region: '北京市',
-    category: '财政补贴',
+    policyType: '规划指南',
+    contentTags: ['双碳减排', '新型场景'],
     status: 'unpublished',
     syncTime: '2026-10-12 17:05:40',
     summary: '对新建超低能耗建筑、建筑光伏一体化（BIPV）及光储直柔系统改造项目给予最高300万元的市级固定资产投资资金奖励。',
@@ -209,12 +242,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-008',
     title: '关于完善工商业分时电价机制促进储能规模化应用的通知',
     policyNumber: '鲁发改价格〔2026〕623号',
-    issuingAgency: '山东省发展和改革委员会',
+    policyCategory: '价格改革政策',
+    issuingAuthority: '山东省发展和改革委员会',
+    publishingAgency: '山东省发展和改革委员会',
     publishDate: '2026-09-10',
     source: '山东省发改委官网',
     sourceUrl: 'http://fgw.shandong.gov.cn/',
     region: '山东省',
-    category: '电力现货',
+    policyType: '政策法规',
+    contentTags: ['电力市场', '光伏储能'],
     status: 'published',
     syncTime: '2026-10-18 10:15:22',
     summary: '调整峰谷时段划分，进一步拉大尖峰与深谷电价差至4.2:1，为用户侧储能和虚拟电厂充放电套利创造更广阔的市场空间。',
@@ -229,12 +265,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-009',
     title: '上海市浦东新区绿色电力消费核算与碳排放核查管理办法',
     policyNumber: '沪环规〔2026〕12号',
-    issuingAgency: '上海市生态环境局、浦东新区人民政府',
+    policyCategory: '地方管理办法',
+    issuingAuthority: '上海市生态环境局、浦东新区人民政府',
+    publishingAgency: '上海市生态环境局',
     publishDate: '2026-05-18',
     source: '上海市生态环境局官网',
     sourceUrl: 'https://sthj.sh.gov.cn/',
     region: '上海市',
-    category: '双碳战略',
+    policyType: '标准规范',
+    contentTags: ['双碳减排', '园区工厂'],
     status: 'unpublished',
     syncTime: '2026-10-10 13:40:00',
     summary: '建立外向型重点企业碳足迹追踪体系，规范绿色电力使用比例认证与第三方机构核查准则。',
@@ -248,12 +287,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
     id: 'pol-010',
     title: '全国碳排放权交易市场第三个履约周期配额分配方案',
     policyNumber: '环气候函〔2026〕99号',
-    issuingAgency: '生态环境部',
+    policyCategory: '国家专项方案',
+    issuingAuthority: '生态环境部',
+    publishingAgency: '生态环境部',
     publishDate: '2026-08-01',
     source: '生态环境部官方公报',
     sourceUrl: 'https://www.mee.gov.cn/',
     region: '全国',
-    category: '双碳战略',
+    policyType: '政策法规',
+    contentTags: ['双碳减排', '电力市场'],
     status: 'published',
     syncTime: '2026-10-17 18:22:15',
     summary: '正式将电解铝、水泥两大重点工业用能行业纳入全国碳市场配额管理，明确年度基准线收紧比例与CCER抵销比例要求。',
@@ -267,16 +309,15 @@ const INITIAL_POLICIES: PolicyItem[] = [
 ];
 
 // Options for filters
-const REGION_OPTIONS = ['全国', '广东省', '江苏省', '浙江省', '山东省', '北京市', '上海市'];
-const CATEGORY_OPTIONS = ['双碳战略', '储能与微电网', '虚拟电厂', '电力现货', '绿电绿证', '节能降碳', '财政补贴'];
-const AGENCY_OPTIONS = [
-  '国家发展改革委、国家能源局',
+export const REGION_OPTIONS = ['全国', '广东省', '江苏省', '浙江省', '山东省', '北京市', '上海市'];
+export const PUBLISHING_AGENCY_OPTIONS = [
+  '国家发展改革委',
   '国家能源局',
   '广东省能源局',
-  '江苏省发改委、江苏能监办',
-  '工业和信息化部、国家发展改革委',
+  '江苏省发改委',
+  '工业和信息化部',
   '浙江省发展和改革委员会',
-  '北京市住房和城乡建设委员会、北京市财政局',
+  '北京市住房和城乡建设委员会',
   '山东省发展和改革委员会',
   '生态环境部',
 ];
@@ -284,39 +325,45 @@ const AGENCY_OPTIONS = [
 export default function PolicyManagement() {
   const [policies, setPolicies] = useState<PolicyItem[]>(INITIAL_POLICIES);
 
-  // ── Traditional Multi-item Filter States ───────────────────────────
-  const [filterKeyword, setFilterKeyword]   = useState('');
-  const [filterAgency, setFilterAgency]     = useState<string>('all');
-  const [filterRegion, setFilterRegion]     = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterStatus, setFilterStatus]     = useState<'all' | 'published' | 'unpublished'>('all');
+  // ── Multi-item Filter States ──
+  const [filterTitle, setFilterTitle]           = useState('');
+  const [filterPolicyType, setFilterPolicyType] = useState<string>('all');
+  const [filterContentTag, setFilterContentTag] = useState<string>('all');
+  const [filterRegion, setFilterRegion]         = useState<string>('all');
+  const [filterStatus, setFilterStatus]         = useState<'all' | 'published' | 'unpublished'>('all');
+  const [filterPublishingAgency, setFilterPublishingAgency] = useState<string>('all');
 
-  // Dialogs
-  const [viewPolicy, setViewPolicy] = useState<PolicyItem | null>(null);
+  // Dialogs: 编辑页
+  const [editPolicy, setEditPolicy] = useState<PolicyItem | null>(null);
+  const [detailTab, setDetailTab] = useState<'basic' | 'content'>('basic');
+  const [formData, setFormData] = useState<{
+    region: string;
+    policyType: PolicyType;
+    contentTags: string[];
+  }>({
+    region: '全国',
+    policyType: '政策法规',
+    contentTags: [],
+  });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
-  // Filter logic
+  // Filter logic: 仅针对政策标题的模糊搜索
   const filteredPolicies = useMemo(() => {
     return policies.filter((item) => {
-      const q = filterKeyword.trim().toLowerCase();
-      const matchSearch =
-        !q ||
-        item.title.toLowerCase().includes(q) ||
-        item.issuingAgency.toLowerCase().includes(q) ||
-        item.source.toLowerCase().includes(q) ||
-        (item.policyNumber && item.policyNumber.toLowerCase().includes(q));
-
-      const matchAgency = filterAgency === 'all' || item.issuingAgency === filterAgency;
+      const q = filterTitle.trim().toLowerCase();
+      const matchTitle = !q || item.title.toLowerCase().includes(q);
+      const matchPolicyType = filterPolicyType === 'all' || item.policyType === filterPolicyType;
+      const matchContentTag = filterContentTag === 'all' || item.contentTags.includes(filterContentTag);
       const matchRegion = filterRegion === 'all' || item.region === filterRegion;
-      const matchCategory = filterCategory === 'all' || item.category === filterCategory;
       const matchStatus = filterStatus === 'all' || item.status === filterStatus;
+      const matchAgency = filterPublishingAgency === 'all' || item.publishingAgency === filterPublishingAgency;
 
-      return matchSearch && matchAgency && matchRegion && matchCategory && matchStatus;
+      return matchTitle && matchPolicyType && matchContentTag && matchRegion && matchStatus && matchAgency;
     });
-  }, [policies, filterKeyword, filterAgency, filterRegion, filterCategory, filterStatus]);
+  }, [policies, filterTitle, filterPolicyType, filterContentTag, filterRegion, filterStatus, filterPublishingAgency]);
 
   // Paginated policies
   const totalPages = Math.max(1, Math.ceil(filteredPolicies.length / pageSize));
@@ -325,23 +372,24 @@ export default function PolicyManagement() {
     return filteredPolicies.slice(start, start + pageSize);
   }, [filteredPolicies, currentPage, pageSize]);
 
-  // Handlers
+  // Reset filters
   const handleResetFilters = () => {
-    setFilterKeyword('');
-    setFilterAgency('all');
+    setFilterTitle('');
+    setFilterPolicyType('all');
+    setFilterContentTag('all');
     setFilterRegion('all');
-    setFilterCategory('all');
     setFilterStatus('all');
+    setFilterPublishingAgency('all');
     setCurrentPage(1);
     toast.info('筛选条件已重置');
   };
 
   const handleQuery = () => {
     setCurrentPage(1);
-    toast.info(`查询完成，共匹配到 ${filteredPolicies.length} 项政策`);
+    toast.info(`查询完成，共匹配到 ${filteredPolicies.length} 篇政策`);
   };
 
-  // Toggle single status
+  // Toggle status
   const handleToggleStatus = (id: string) => {
     setPolicies((prev) =>
       prev.map((item) => {
@@ -358,6 +406,62 @@ export default function PolicyManagement() {
     );
   };
 
+  // Open Edit Dialog
+  const handleOpenEdit = (policy: PolicyItem) => {
+    setEditPolicy(policy);
+    setFormData({
+      region: policy.region,
+      policyType: policy.policyType,
+      contentTags: [...policy.contentTags],
+    });
+    setDetailTab('basic');
+  };
+
+  // Toggle a content tag in edit form
+  const handleToggleTag = (tag: string) => {
+    setFormData((prev) => {
+      const exists = prev.contentTags.includes(tag);
+      if (exists) {
+        return {
+          ...prev,
+          contentTags: prev.contentTags.filter((t) => t !== tag),
+        };
+      } else {
+        return {
+          ...prev,
+          contentTags: [...prev.contentTags, tag],
+        };
+      }
+    });
+  };
+
+  // Save Edit: 仅所属地区、政策类型、内容标签可编辑保存
+  const handleSaveEdit = () => {
+    if (!editPolicy) return;
+
+    if (formData.contentTags.length === 0) {
+      toast.warning('请至少选择一个内容标签');
+      return;
+    }
+
+    setPolicies((prev) =>
+      prev.map((item) => {
+        if (item.id === editPolicy.id) {
+          return {
+            ...item,
+            region: formData.region,
+            policyType: formData.policyType,
+            contentTags: formData.contentTags,
+          };
+        }
+        return item;
+      })
+    );
+
+    toast.success(`政策《${editPolicy.title.slice(0, 14)}...》信息已保存`);
+    setEditPolicy(null);
+  };
+
   // Download policy file helper
   const handleDownloadFile = (policy: PolicyItem, attachmentName?: string) => {
     const filename = attachmentName || `${policy.title}.pdf`;
@@ -365,10 +469,13 @@ export default function PolicyManagement() {
 --------------------------------------------------------------------------------
 政策标题：${policy.title}
 发文字号：${policy.policyNumber || '暂无发文字号'}
-发文机构：${policy.issuingAgency}
-发布时间：${policy.publishDate}
+政策分类：${policy.policyCategory}
+发文机关：${policy.issuingAuthority}
+发布机构：${policy.publishingAgency}
+政策类型：${policy.policyType}
+内容标签：${policy.contentTags.join('、')}
 所属地区：${policy.region}
-资讯分类：${policy.category}
+发布时间：${policy.publishDate}
 发布来源：${policy.source}
 原始官方链接：${policy.sourceUrl}
 --------------------------------------------------------------------------------
@@ -425,21 +532,21 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
         </p>
       </div>
 
-      {/* ── Traditional Multi-item Filter Card (传统多项列表筛选) ── */}
+      {/* ── Multi-item Filter Card ── */}
       <Card className="p-5 mb-5 bg-white rounded-lg shadow-2xs border border-gray-200">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-4">
-          {/* 筛选项 1: 模糊搜索 */}
+          {/* 筛选项 1: 政策标题 (仅针对政策标题的模糊搜索) */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700 whitespace-nowrap w-20 text-right">
-              模糊搜索:
+              政策标题:
             </span>
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-gray-400" />
               <Input
-                placeholder="搜索政策标题、发文机构、文号..."
-                value={filterKeyword}
+                placeholder="搜索政策标题关键字..."
+                value={filterTitle}
                 onChange={(e) => {
-                  setFilterKeyword(e.target.value);
+                  setFilterTitle(e.target.value);
                   setCurrentPage(1);
                 }}
                 className="pl-8 text-sm h-9 bg-white border-gray-200 focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
@@ -447,33 +554,59 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
             </div>
           </div>
 
-          {/* 筛选项 2: 资讯分类 */}
+          {/* 筛选项 2: 政策类型 (政策法规，标准规范，规划指南) */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700 whitespace-nowrap w-20 text-right">
-              资讯分类:
+              政策类型:
             </span>
             <Select
-              value={filterCategory}
+              value={filterPolicyType}
               onValueChange={(v) => {
-                setFilterCategory(v);
+                setFilterPolicyType(v);
                 setCurrentPage(1);
               }}
             >
               <SelectTrigger className="h-9 text-sm flex-1 bg-white border-gray-200 rounded text-gray-700">
-                <SelectValue placeholder="全部资讯分类" />
+                <SelectValue placeholder="全部政策类型" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部资讯分类</SelectItem>
-                {CATEGORY_OPTIONS.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
+                <SelectItem value="all">全部政策类型</SelectItem>
+                {POLICY_TYPE_OPTIONS.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* 筛选项 3: 所属地区 */}
+          {/* 筛选项 3: 内容标签 */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700 whitespace-nowrap w-20 text-right">
+              内容标签:
+            </span>
+            <Select
+              value={filterContentTag}
+              onValueChange={(v) => {
+                setFilterContentTag(v);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 text-sm flex-1 bg-white border-gray-200 rounded text-gray-700">
+                <SelectValue placeholder="全部内容标签" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部内容标签</SelectItem>
+                {CONTENT_TAG_OPTIONS.map((tag) => (
+                  <SelectItem key={tag} value={tag}>
+                    {tag}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 筛选项 4: 所属地区 */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700 whitespace-nowrap w-20 text-right">
               所属地区:
@@ -499,7 +632,7 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
             </Select>
           </div>
 
-          {/* 筛选项 4: 上架状态 */}
+          {/* 筛选项 5: 上架状态 */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700 whitespace-nowrap w-20 text-right">
               上架状态:
@@ -522,24 +655,24 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
             </Select>
           </div>
 
-          {/* 筛选项 5: 发文机构 */}
-          <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-2 xl:col-span-2">
+          {/* 筛选项 6: 发布机构 (原发文机构) */}
+          <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700 whitespace-nowrap w-20 text-right">
-              发文机构:
+              发布机构:
             </span>
             <Select
-              value={filterAgency}
+              value={filterPublishingAgency}
               onValueChange={(v) => {
-                setFilterAgency(v);
+                setFilterPublishingAgency(v);
                 setCurrentPage(1);
               }}
             >
               <SelectTrigger className="h-9 text-sm flex-1 bg-white border-gray-200 rounded text-gray-700">
-                <SelectValue placeholder="全部发文机构" />
+                <SelectValue placeholder="全部发布机构" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部发文机构</SelectItem>
-                {AGENCY_OPTIONS.map((a) => (
+                <SelectItem value="all">全部发布机构</SelectItem>
+                {PUBLISHING_AGENCY_OPTIONS.map((a) => (
                   <SelectItem key={a} value={a}>
                     {a}
                   </SelectItem>
@@ -584,7 +717,7 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
           <div className="flex items-center gap-2.5">
             <ScrollText className="size-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-gray-800">政策法规列表</h2>
+            <h2 className="text-xs font-semibold text-gray-800">政策法规列表</h2>
             <div className="flex items-center gap-1.5 ml-1 text-xs">
               <span className="px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700">
                 总计 {policies.length} 篇
@@ -599,28 +732,31 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
           </div>
         </div>
 
-        {/* The Main Table with all required columns */}
+        {/* The Main Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap min-w-[280px]">
                   政策标题
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
-                  发文机构
+                  发布机构
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
+                  政策类型
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
+                  内容标签
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
+                  所属地区
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
                   发布时间
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
                   来源
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
-                  所属地区
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
-                  资讯分类
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
                   上架状态
@@ -633,7 +769,7 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
             <tbody>
               {paginatedPolicies.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center text-xs text-gray-400">
+                  <td colSpan={9} className="py-16 text-center text-xs text-gray-400">
                     <div className="flex flex-col items-center justify-center">
                       <ScrollText className="size-8 text-gray-300 mb-2 stroke-1" />
                       <p>未找到匹配的政策法规资讯</p>
@@ -662,12 +798,12 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
                       }}
                     >
                       {/* 1. 政策标题 */}
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-3.5 text-xs">
                         <div className="space-y-1">
                           <button
                             type="button"
-                            onClick={() => setViewPolicy(item)}
-                            className="font-medium text-gray-900 hover:text-blue-600 transition-colors text-left line-clamp-2 leading-snug cursor-pointer group flex items-start gap-1.5"
+                            onClick={() => handleOpenEdit(item)}
+                            className="text-xs font-medium text-gray-900 hover:text-blue-600 transition-colors text-left line-clamp-2 leading-snug cursor-pointer group flex items-start gap-1.5"
                           >
                             <span className="group-hover:underline">{item.title}</span>
                           </button>
@@ -681,15 +817,60 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
                         </div>
                       </td>
 
-                      {/* 2. 发文机构 */}
+                      {/* 2. 发布机构 (原发文机构) */}
                       <td className="px-4 py-3.5 whitespace-nowrap text-xs text-gray-700">
-                        <div className="flex items-center gap-1.5 max-w-[200px] truncate" title={item.issuingAgency}>
+                        <div className="flex items-center gap-1.5 max-w-[180px] truncate" title={item.publishingAgency}>
                           <Building className="size-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{item.issuingAgency}</span>
+                          <span className="truncate">{item.publishingAgency}</span>
                         </div>
                       </td>
 
-                      {/* 3. 发布时间 */}
+                      {/* 3. 政策类型 */}
+                      <td className="px-4 py-3.5 whitespace-nowrap text-xs">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium border ${
+                            item.policyType === '政策法规'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : item.policyType === '标准规范'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-purple-50 text-purple-700 border-purple-200'
+                          }`}
+                        >
+                          <Bookmark className="size-3" />
+                          {item.policyType}
+                        </span>
+                      </td>
+
+                      {/* 4. 内容标签 */}
+                      <td className="px-4 py-3.5 text-xs">
+                        <div className="flex flex-wrap gap-1 max-w-[210px]">
+                          {item.contentTags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap font-medium"
+                            >
+                              <Tag className="size-2.5 mr-1 text-slate-400" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* 5. 所属地区 */}
+                      <td className="px-4 py-3.5 whitespace-nowrap text-xs">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium border ${
+                            item.region === '全国'
+                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          <Globe2 className="size-3" />
+                          {item.region}
+                        </span>
+                      </td>
+
+                      {/* 6. 发布时间 */}
                       <td className="px-4 py-3.5 whitespace-nowrap text-xs text-gray-600 tabular-nums">
                         <div className="flex items-center gap-1.5">
                           <Calendar className="size-3.5 text-slate-400" />
@@ -697,7 +878,7 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
                         </div>
                       </td>
 
-                      {/* 4. 来源 */}
+                      {/* 7. 来源 */}
                       <td className="px-4 py-3.5 whitespace-nowrap text-xs text-gray-600">
                         <div className="flex items-center gap-1">
                           <span>{item.source}</span>
@@ -715,29 +896,7 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
                         </div>
                       </td>
 
-                      {/* 5. 所属地区 */}
-                      <td className="px-4 py-3.5 whitespace-nowrap text-xs">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium ${
-                            item.region === '全国'
-                              ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                              : 'bg-slate-100 text-slate-700 border border-slate-200'
-                          }`}
-                        >
-                          <Globe2 className="size-3" />
-                          {item.region}
-                        </span>
-                      </td>
-
-                      {/* 6. 资讯分类 */}
-                      <td className="px-4 py-3.5 whitespace-nowrap text-xs">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                          <Tag className="size-3" />
-                          {item.category}
-                        </span>
-                      </td>
-
-                      {/* 7. 上架状态 */}
+                      {/* 8. 上架状态 */}
                       <td className="px-4 py-3.5 whitespace-nowrap text-xs">
                         <div className="flex items-center gap-2">
                           <Switch
@@ -760,18 +919,18 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
                         </div>
                       </td>
 
-                      {/* 操作 */}
+                      {/* 9. 操作 */}
                       <td className="px-4 py-3.5 whitespace-nowrap text-xs">
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-7 px-2.5 text-xs text-blue-600 hover:bg-blue-50 font-medium"
-                            onClick={() => setViewPolicy(item)}
-                            title="查看详情"
+                            onClick={() => handleOpenEdit(item)}
+                            title="编辑政策"
                           >
-                            <Eye className="size-3.5 mr-1" />
-                            详情
+                            <Pencil className="size-3.5 mr-1" />
+                            编辑
                           </Button>
                         </div>
                       </td>
@@ -815,238 +974,296 @@ ${policy.applicableServices?.join('、') || '能源管理、智能微网、虚�
         </div>
       </Card>
 
-      {/* ── Policy View Details Dialog ── */}
-      <Dialog open={!!viewPolicy} onOpenChange={(open) => !open && setViewPolicy(null)}>
-        <DialogContent className="max-w-2xl max-h-[88vh] overflow-y-auto">
-          {viewPolicy && (
-            <div>
-              {/* Header */}
-              <DialogHeader className="border-b pb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded font-medium ${
-                      viewPolicy.status === 'published'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-gray-100 text-gray-600 border border-gray-200'
-                    }`}
-                  >
-                    {viewPolicy.status === 'published' ? '● 已上架' : '○ 已下架'}
-                  </span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                    {viewPolicy.category}
-                  </span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
-                    {viewPolicy.region}
-                  </span>
-                </div>
-                <DialogTitle className="text-base font-semibold text-gray-900 leading-snug">
-                  {viewPolicy.title}
+      {/* ── Policy Edit Dialog (简化页面，移除复杂嵌套样式与冗余描述) ── */}
+      <Dialog open={!!editPolicy} onOpenChange={(open) => !open && setEditPolicy(null)}>
+        <DialogContent className="sm:max-w-3xl w-[94vw] sm:w-[800px] max-h-[88vh] overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-6">
+          {editPolicy && (
+            <div className="space-y-4">
+              {/* Header: 简洁标题 */}
+              <DialogHeader className="border-b pb-3 text-left">
+                <DialogTitle className="text-base font-semibold text-gray-900">
+                  编辑政策
                 </DialogTitle>
-                {viewPolicy.policyNumber && (
-                  <p className="text-xs font-mono text-gray-500 mt-1">
-                    发文字号：{viewPolicy.policyNumber}
-                  </p>
-                )}
               </DialogHeader>
 
-              <div className="py-4 space-y-4 text-xs">
-                {/* Meta details grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-lg bg-gray-50 border border-gray-100">
-                  <div>
-                    <span className="text-gray-400 block mb-0.5">发文机构</span>
-                    <span className="font-medium text-gray-800">{viewPolicy.issuingAgency}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5">发布时间</span>
-                    <span className="font-medium text-gray-800 tabular-nums">{viewPolicy.publishDate}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5">发布来源</span>
-                    <span className="font-medium text-gray-800">{viewPolicy.source}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 block mb-0.5">所属地区</span>
-                    <span className="font-medium text-gray-800">{viewPolicy.region}</span>
-                  </div>
-                </div>
+              {/* 简洁 Tab 导航 */}
+              <div className="flex border-b border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('basic')}
+                  className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors cursor-pointer ${
+                    detailTab === 'basic'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  基础信息
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('content')}
+                  className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px transition-colors cursor-pointer ${
+                    detailTab === 'content'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  正文信息
+                </button>
+              </div>
 
-                {/* ── 原始链接访问专区 (Original Link Access Box) ── */}
-                <div className="p-3.5 rounded-lg bg-blue-50/40 border border-blue-100 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-blue-900 flex items-center gap-1.5">
-                      <Globe className="size-3.5 text-blue-600" />
-                      官方发文原始链接
-                    </span>
-                    <span className="text-[11px] text-blue-600">权威发布源</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white px-3 py-2 rounded border border-blue-200/60">
-                    <span className="text-xs font-mono text-gray-600 truncate flex-1 select-all" title={viewPolicy.sourceUrl}>
-                      {viewPolicy.sourceUrl}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCopyLink(viewPolicy.sourceUrl)}
-                      className="h-7 px-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 shrink-0"
-                      title="复制原始链接"
-                    >
-                      <Copy className="size-3 mr-1" />
-                      复制
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => window.open(viewPolicy.sourceUrl, '_blank')}
-                      className="h-7 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white shrink-0 flex items-center gap-1"
-                    >
-                      <ExternalLink className="size-3" />
-                      访问原始链接
-                    </Button>
-                  </div>
-                </div>
-
-                {/* ── 政策文件下载专区 (Policy Files Download Section) ── */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-700 flex items-center gap-1.5">
-                      <FileDown className="size-4 text-emerald-600" />
-                      政策文件与附件下载 ({viewPolicy.attachments?.length || 1} 份):
-                    </span>
+              {/* ── Tab 1: 基础信息 ── */}
+              {detailTab === 'basic' && (
+                <div className="space-y-3.5 text-xs">
+                  {/* 政策标题 (不可编辑) */}
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">政策标题</label>
+                    <div className="p-2.5 bg-gray-50 border border-gray-200 rounded text-gray-900 font-medium leading-relaxed">
+                      {editPolicy.title}
+                    </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    {viewPolicy.attachments && viewPolicy.attachments.length > 0 ? (
-                      viewPolicy.attachments.map((att, idx) => {
-                        const isPdf = att.type === 'pdf';
-                        const isXlsx = att.type === 'xlsx';
+                  {/* 可编辑行: 所属地区、政策类型 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="text-xs text-gray-700 font-medium block mb-1">
+                        所属地区
+                      </label>
+                      <Select
+                        value={formData.region}
+                        onValueChange={(v) =>
+                          setFormData((prev) => ({ ...prev, region: v }))
+                        }
+                      >
+                        <SelectTrigger className="h-9 text-xs bg-white border-gray-300 rounded text-gray-800">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {REGION_OPTIONS.map((r) => (
+                            <SelectItem key={r} value={r}>
+                              {r}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-700 font-medium block mb-1">
+                        政策类型
+                      </label>
+                      <Select
+                        value={formData.policyType}
+                        onValueChange={(v) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            policyType: v as PolicyType,
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-9 text-xs bg-white border-gray-300 rounded text-gray-800">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {POLICY_TYPE_OPTIONS.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {t}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* 可编辑项: 内容标签 */}
+                  <div>
+                    <label className="text-xs text-gray-700 font-medium block mb-1.5">
+                      内容标签
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {CONTENT_TAG_OPTIONS.map((tag) => {
+                        const isSelected = formData.contentTags.includes(tag);
                         return (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/20 transition-all group"
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => handleToggleTag(tag)}
+                            className={`px-3 py-1.5 rounded text-xs transition-colors border cursor-pointer ${
+                              isSelected
+                                ? 'bg-blue-600 text-white border-blue-600 font-medium'
+                                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                            }`}
                           >
-                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                              {isPdf ? (
-                                <div className="size-7 rounded bg-red-50 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
-                                  <FileText className="size-4" />
-                                </div>
-                              ) : isXlsx ? (
-                                <div className="size-7 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200">
-                                  <FileSpreadsheet className="size-4" />
-                                </div>
-                              ) : (
-                                <div className="size-7 rounded bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-200">
-                                  <FileText className="size-4" />
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="text-xs font-medium text-gray-800 truncate group-hover:text-emerald-700">
-                                  {att.name}
-                                </p>
-                                <span className="text-[11px] text-gray-400 font-mono">
-                                  文件大小：{att.size}
-                                </span>
-                              </div>
-                            </div>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDownloadFile(viewPolicy, att.name)}
-                              className="h-7 text-xs px-2.5 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white shrink-0 flex items-center gap-1"
-                            >
-                              <Download className="size-3" />
-                              下载文件
-                            </Button>
-                          </div>
+                            {tag}
+                          </button>
                         );
-                      })
-                    ) : (
-                      <div className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-white">
-                        <div className="flex items-center gap-2 text-xs text-gray-700">
-                          <FileText className="size-4 text-red-500" />
-                          <span>{viewPolicy.title}.pdf</span>
-                        </div>
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 不可编辑字段区域 (政策分类、发文机关、发布机构等) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                    {/* 政策分类 (不可编辑) */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">政策分类</label>
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded text-gray-800">
+                        {editPolicy.policyCategory}
+                      </div>
+                    </div>
+
+                    {/* 发文字号 (不可编辑) */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">发文字号</label>
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded text-gray-800 font-mono">
+                        {editPolicy.policyNumber || '暂无文号'}
+                      </div>
+                    </div>
+
+                    {/* 发文机关 (不可编辑) */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">发文机关</label>
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded text-gray-800">
+                        {editPolicy.issuingAuthority}
+                      </div>
+                    </div>
+
+                    {/* 发布机构 (不可编辑 - 原发文机构) */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">发布机构</label>
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded text-gray-800">
+                        {editPolicy.publishingAgency}
+                      </div>
+                    </div>
+
+                    {/* 发布时间 (不可编辑) */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">发布时间</label>
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded text-gray-800 tabular-nums">
+                        {editPolicy.publishDate}
+                      </div>
+                    </div>
+
+                    {/* 发布来源 (不可编辑) */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">发布来源</label>
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded text-gray-800">
+                        {editPolicy.source}
+                      </div>
+                    </div>
+
+                    {/* 上架状态 (不可编辑) */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">上架状态</label>
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded text-gray-800 flex items-center gap-1.5">
+                        <span
+                          className={`size-1.5 rounded-full ${
+                            editPolicy.status === 'published' ? 'bg-emerald-500' : 'bg-gray-400'
+                          }`}
+                        />
+                        {editPolicy.status === 'published' ? '已上架' : '已下架'}
+                      </div>
+                    </div>
+
+                    {/* 原始链接 (不可编辑) */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">原始链接</label>
+                      <div className="p-1.5 bg-gray-50 border border-gray-200 rounded flex items-center gap-1.5">
+                        <span className="text-gray-700 truncate flex-1 font-mono text-[11px]" title={editPolicy.sourceUrl}>
+                          {editPolicy.sourceUrl}
+                        </span>
                         <Button
                           type="button"
+                          variant="ghost"
                           size="sm"
-                          variant="outline"
-                          onClick={() => handleDownloadFile(viewPolicy)}
-                          className="h-7 text-xs px-2.5 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                          onClick={() => handleCopyLink(editPolicy.sourceUrl)}
+                          className="h-6 px-2 text-[11px] text-gray-600 hover:text-blue-600"
                         >
-                          <Download className="size-3 mr-1" />
-                          下载政策文件
+                          复制
                         </Button>
+                        <a
+                          href={editPolicy.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] text-blue-600 hover:underline px-1"
+                        >
+                          访问
+                        </a>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {/* Applicable SaaS services */}
-                {viewPolicy.applicableServices && viewPolicy.applicableServices.length > 0 && (
+              {/* ── Tab 2: 正文信息 ── */}
+              {detailTab === 'content' && (
+                <div className="space-y-3.5 text-xs">
                   <div>
-                    <span className="font-medium text-gray-700 block mb-1.5 flex items-center gap-1.5">
-                      <Layers className="size-3.5 text-blue-600" />
-                      关联业务模块:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {viewPolicy.applicableServices.map((svc) => (
-                        <span
-                          key={svc}
-                          className="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200"
+                    <label className="text-xs text-gray-700 font-medium block mb-1">政策摘要</label>
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded text-gray-700 leading-relaxed text-xs">
+                      {editPolicy.summary || '暂无摘要'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-gray-700 font-medium block mb-1">政策正文</label>
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded text-gray-700 leading-relaxed whitespace-pre-line text-xs max-h-60 overflow-y-auto">
+                      {editPolicy.content || '暂无正文说明'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-gray-700 font-medium block mb-1">
+                      政策附件 ({editPolicy.attachments?.length || 0} 份)
+                    </label>
+                    <div className="space-y-1.5">
+                      {editPolicy.attachments?.map((att, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200 rounded"
                         >
-                          {svc}
-                        </span>
+                          <span className="text-xs text-gray-800 truncate mr-2">
+                            {att.name} <span className="text-gray-400 font-mono">({att.size})</span>
+                          </span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadFile(editPolicy, att.name)}
+                            className="h-7 text-xs px-2.5 shrink-0 border-gray-300"
+                          >
+                            下载
+                          </Button>
+                        </div>
                       ))}
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Summary */}
-                {viewPolicy.summary && (
-                  <div>
-                    <span className="font-medium text-gray-700 block mb-1 flex items-center gap-1.5">
-                      <Sparkles className="size-3.5 text-amber-500" />
-                      政策核心摘要:
-                    </span>
-                    <p className="text-gray-600 leading-relaxed bg-amber-50/40 p-3 rounded border border-amber-100">
-                      {viewPolicy.summary}
-                    </p>
-                  </div>
-                )}
-
-                {/* Content */}
-                {viewPolicy.content && (
-                  <div>
-                    <span className="font-medium text-gray-700 block mb-1 flex items-center gap-1.5">
-                      <FileText className="size-3.5 text-blue-500" />
-                      政策正文要点与执行指引:
-                    </span>
-                    <p className="text-gray-600 leading-relaxed whitespace-pre-line bg-gray-50/60 p-3 rounded border border-gray-100">
-                      {viewPolicy.content}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Dialog Footer Actions */}
-              <DialogFooter className="border-t pt-3 flex flex-row justify-end items-center w-full">
+              {/* Dialog Footer: 简洁保存与取消 */}
+              <DialogFooter className="border-t pt-3 flex justify-end gap-2">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
-                  onClick={() => setViewPolicy(null)}
-                  className="h-8 text-xs px-4"
+                  onClick={() => setEditPolicy(null)}
+                  className="h-8 text-xs px-4 border-gray-200 text-gray-700"
                 >
-                  关闭
+                  取消
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSaveEdit}
+                  className="h-8 text-xs px-4 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  保存
                 </Button>
               </DialogFooter>
             </div>
           )}
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
-

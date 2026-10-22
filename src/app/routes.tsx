@@ -6,6 +6,7 @@ import NotificationHistory from './pages/NotificationHistory';
 import Settings from './pages/Settings';
 import HolidayCalendar from './pages/HolidayCalendar';
 import PolicyManagement from './pages/PolicyManagement';
+import PopupAlertManagement from './pages/PopupAlertManagement';
 
 export const router = createBrowserRouter([
   {
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
       { path: 'templates', Component: TemplateList },
       { path: 'notifications', Component: NotificationHistory },
       { path: 'settings', Component: Settings },
+      { path: 'popups', Component: PopupAlertManagement },
       { path: 'policies', Component: PolicyManagement },
       { path: 'holidays', Component: HolidayCalendar },
     ],

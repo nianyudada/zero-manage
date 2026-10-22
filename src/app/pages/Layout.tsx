@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import {
   Bell, FileText, Settings, Zap, ChevronRight, ChevronDown,
-  CalendarDays, Building2, MessagesSquare, ScrollText
+  CalendarDays, Building2, MessagesSquare, ScrollText, Megaphone
 } from 'lucide-react';
 import { cn } from '../components/ui/utils';
 
@@ -30,6 +30,7 @@ const navigation: NavItem[] = [
       { name: '消息设置', href: '/settings', icon: Settings },
     ],
   },
+  { name: '弹窗提醒', href: '/popups', icon: Megaphone },
   { name: '政策管理', href: '/policies', icon: ScrollText },
   { name: '节假日情况', href: '/holidays', icon: CalendarDays },
 ];
